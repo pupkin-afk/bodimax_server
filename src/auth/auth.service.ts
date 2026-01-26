@@ -6,7 +6,7 @@ import type { User } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 import { ErrorCode } from "src/exception-filter/errors.enum";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
-import { randomUUID } from "crypto";
+import * as crypto from "crypto";
 import { Request, Response } from "express";
 import { LoginDTO } from "./dtos/LoginDTO";
 
@@ -101,7 +101,7 @@ export class AuthService {
     }
 
     async issueToken(userId: number, res: Response, refreshTokenId?: number) {
-        const refreshToken = randomUUID();
+        const refreshToken = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + this.REFRESH_TOKEN_AGE);
 
         if (!refreshTokenId) {
