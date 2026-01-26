@@ -25,12 +25,12 @@ export class HttpErrorFilter implements ExceptionFilter {
 
         if (status === 404) {
             return res.status(404).json({
-                code: ErrorCode.NOT_FOUND
+                error_codes: [ErrorCode.NOT_FOUND]
             });
         }
 
         return res.status(status).json({
-            error_codes: ErrorCode.UNKNOWN_ERROR
+            error_codes: [ErrorCode.UNKNOWN_ERROR]
         })
     }
 }
