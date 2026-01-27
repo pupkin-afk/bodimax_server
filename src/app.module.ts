@@ -6,6 +6,7 @@ import { UsersModule } from './modules/users/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { AppConfig } from './config/config';
 import { PostsModule } from './modules/posts/posts.module';
+import { CommentsModule } from './modules/comments/comments.module';
 
 @Module({
   imports: [
@@ -20,7 +21,8 @@ import { PostsModule } from './modules/posts/posts.module';
     PrismaModule,
     AuthModule,
     UsersModule,
-    PostsModule
+    PostsModule,
+    CommentsModule
   ],
   controllers: [],
   providers: [],

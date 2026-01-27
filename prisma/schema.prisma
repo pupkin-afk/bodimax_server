@@ -15,6 +15,7 @@ model User {
   createdAt     DateTime @default(now())
   refreshTokens RefreshToken[]
   posts Post[]
+  comments Comment[]
 }
 
 model RefreshToken {
@@ -34,9 +35,31 @@ model Post {
   authorId     Int
   author       User      @relation(fields: [authorId], references: [id])
   content      String
-  editedAt       DateTime?
+  editedAt     DateTime?
   createdAt    DateTime  @default(now())
+  comments     Comment[]
   @@index([id, authorId])
+}
+
+model Comment {
+  id          Int        @id @default(autoincrement())
+
+  authorId    Int
+  author      User       @relation(fields: [authorId], references: [id])
+
+  postId      Int
+  post        Post       @relation(fields: [postId], references: [id])
+
+  parentId    Int?
+  parent      Comment?   @relation("CommentReply", fields: [parentId], references: [id])
+
+  replies     Comment[]  @relation("CommentReply")
+
+  content     String
+  editedAt    DateTime?
+  createdAt   DateTime   @default(now())
+
+  @@index([id, postId, authorId, parentId])
 }
 
 // npx prisma migrate dev --name init
