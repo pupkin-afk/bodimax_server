@@ -74,20 +74,20 @@ export class UsersService {
     }
 
     async filterUsers(dto: UsersFilterDTO) {
-        let take = dto.maxPerPage || 10;
-        let page = dto.page || 0;
+        const take = dto.maxPerPage;
+        const page = dto.page-1;
         const searchString = dto.searchString || "";
         const words = searchString
                     .trim()
                     .split(/\s+/)
                     .slice(0, 3);
 
-        if (take > 15 || take < 1) {
-            take = 10;
-        }
-        if (page < 0) {
-            page = 0;
-        }
+        // if (take > 15 || take < 1) {
+        //     take = 10;
+        // }
+        // if (page < 0) {
+        //     page = 0;
+        // }
 
         if (words.length === 0) {
             words.push('');
