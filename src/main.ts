@@ -21,7 +21,11 @@ async function bootstrap() {
   app.use(cookieParser());
   app.useGlobalFilters(new HttpErrorFilter());
   app.enableCors({
-    origin: true,
+    origin: [
+      'http://127.0.0.1:5500'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
   });
   app.set('trust proxy', true);

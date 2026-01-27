@@ -28,6 +28,7 @@ export class AuthController {
     @Post("login")
     @UseGuards(NoAuthGuard)
     async login(@Body() dto: LoginDTO, @Res() res: Response, @Req() req: Request) {
+        console.log("ASD");
         await this.auth.login(dto, res, req);
         res.status(HttpStatus.NO_CONTENT).end();
     }
