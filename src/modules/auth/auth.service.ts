@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Inject, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { PrismaService } from "src/prisma/prisma.service";
 import { RegisterDTO } from "./dtos/RegisterDTO";
@@ -10,6 +10,13 @@ import * as crypto from "crypto";
 import type { Request, Response } from "express";
 import { LoginDTO } from "./dtos/LoginDTO";
 import { AppConfig } from "src/config/config";
+import { ChangePasswordDTO } from "./dtos/ChangePasswordDTO";
+import { SendVerifyEmailDTO } from "./dtos/SendVerifyEmailDTO";
+import Redis from "ioredis";
+import { MailerService } from "@nestjs-modules/mailer";
+import { REDIS } from "src/redis/redis.module";
+import { generateString, hash256 } from "src/common/helpers/cryptoHelper";
+import { VerifyEmailDTO } from "./dtos/VerifyEmailDTO";
 
 @Injectable()
 export class AuthService {
@@ -19,7 +26,9 @@ export class AuthService {
     
     constructor(
         private readonly prisma: PrismaService,
-        private readonly jwt: JwtService
+        private readonly jwt: JwtService,
+        @Inject(REDIS) private readonly redis: Redis,
+        private readonly mailer: MailerService
     ) {}
     
     async login(dto: LoginDTO, res: Response, req: Request) {
@@ -60,6 +69,120 @@ export class AuthService {
         }
 
         await this.issueToken(user.id, res, req);
+    }
+
+    async changePassword(dto: ChangePasswordDTO, userId: number) {
+        if (dto.oldPassword === dto.newPassword) {
+            throw new BadRequestException({
+                code: ErrorCode.PASSWORDS_MUST_BE_DIFFERENT
+            });
+        }
+
+        const us = await this.prisma.user.findUnique({
+            where: { id: userId }
+        });
+        
+        const isValidOldPswr = await bcrypt.compare(dto.oldPassword, us!.password);
+        if (!isValidOldPswr) {
+            throw new BadRequestException({
+                code: ErrorCode.OLD_PASSWORD_INVALID
+            });
+        }
+
+        const newHash = await bcrypt.hash(dto.newPassword, 10);
+
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: {
+                password: newHash
+            }
+        });
+    }
+
+    async sendVerifyEmail(dto: SendVerifyEmailDTO, userId: number) {
+        const alreadyExistingUser = await this.prisma.user.findUnique({
+            where: { email: dto.email },
+            select: { id: true }
+        });
+
+        if (alreadyExistingUser) {
+            throw new ConflictException({
+                code: ErrorCode.EMAIL_ALREADY_TAKEN
+            });
+        }
+
+        const us = await this.prisma.user.findFirst({
+                where: { id: userId },
+                select: { firstName: true, lastName: true, email: true }
+        });
+        if (us!.email) {
+            throw new ConflictException({
+                code: ErrorCode.EMAIL_ALREADY_HAVING
+            });
+        }
+
+        const code = generateString(32);
+        const hash = hash256(code);
+
+        const pipeline = this.redis.multi();
+        pipeline.set(`cc:${userId}`, hash, "EX", 15 * 60);
+        pipeline.set(`cm:${userId}`, dto.email, "EX", 15 * 60);
+
+        const results = await pipeline.exec();
+        if (!results || results.some(([err, res]) => err || res !== 'OK')) {
+            throw new InternalServerErrorException({
+                code: ErrorCode.SERVER_ERROR
+            });
+        }
+
+        try {
+            const us = await this.prisma.user.findFirst({
+                where: { id: userId },
+                select: { firstName: true, lastName: true }
+            });
+            const link = process.env.FRONTEND_URL
+                    + "/?userId=" + userId + "&"
+                    + "code=" + encodeURI(code); 
+
+            await this.mailer.sendMail({
+                to: dto.email,
+                subject: "Confirm your email",
+                template: "confirm_email",
+                context: {
+                    name: `${us!.firstName} ${us!.lastName}`,
+                    link
+                }
+            });
+        } catch {
+            throw new InternalServerErrorException({
+                code: ErrorCode.SERVER_ERROR
+            });
+        }
+    }
+
+    async verifyEmail(dto: VerifyEmailDTO) {
+        const hash = await this.redis.get(`cc:${dto.userId}`);
+        const email = await this.redis.get(`cm:${dto.userId}`);
+
+        if (!hash || !email) {
+            throw new BadRequestException({
+                code: ErrorCode.BAD_REQUEST
+            });
+        }
+
+        if (hash256(dto.code) !== hash) {
+            throw new BadRequestException({
+                code: ErrorCode.INCORRECT_VERIFY_CODE
+            });
+        }
+
+        await this.prisma.user.update({
+            where: { id: dto.userId },
+            data: { email }
+        });
+
+        await this.redis.del(`cc:${dto.userId}`);
+        await this.redis.del(`cm:${dto.userId}`);
     }
 
     async logout(req: Request, res: Response) {

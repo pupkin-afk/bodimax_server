@@ -12,6 +12,7 @@ model User {
   firstName     String
   lastName      String
   password      String
+  email         String?  @unique
   createdAt     DateTime @default(now())
   refreshTokens RefreshToken[]
   posts Post[]
@@ -42,25 +43,25 @@ model Post {
 }
 
 model Comment {
-  id          Int        @id @default(autoincrement())
+  id            Int        @id @default(autoincrement())
 
-  authorId    Int
-  author      User       @relation(fields: [authorId], references: [id])
+  authorId      Int
+  author        User       @relation(fields: [authorId], references: [id])
 
-  postId      Int
-  post        Post       @relation(fields: [postId], references: [id])
+  postId        Int
+  post          Post       @relation(fields: [postId], references: [id])
 
   parentId      Int?
   parent        Comment?   @relation("CommentParent", fields: [parentId], references: [id])
   parentReplies Comment[]  @relation("CommentParent")
 
-  repliedToId  Int?       
-  repliedTo    Comment?    @relation("CommentReplied", fields: [repliedToId], references: [id])
-  replyFrom    Comment[]   @relation("CommentReplied")
+  repliedToId   Int?       
+  repliedTo     Comment?    @relation("CommentReplied", fields: [repliedToId], references: [id])
+  replyFrom     Comment[]   @relation("CommentReplied")
 
-  content     String
-  editedAt    DateTime?
-  createdAt   DateTime     @default(now())
+  content      String
+  editedAt     DateTime?
+  createdAt    DateTime     @default(now())
 
   @@index([id, postId, authorId, parentId])
 }

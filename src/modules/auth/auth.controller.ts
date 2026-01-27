@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, Req, Res, UnauthorizedException, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, Put, Req, Res, UnauthorizedException, UseGuards } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { RegisterDTO } from "./dtos/RegisterDTO";
 import type { Request, Response } from "express";
@@ -8,6 +8,9 @@ import { AuthGuard } from "./guards/auth.guard";
 import { UserId } from "./decorators/user-id.decorator";
 import { ErrorCode } from "src/exception-filter/errors.enum";
 import { SessionId } from "./decorators/session-id";
+import { ChangePasswordDTO } from "./dtos/ChangePasswordDTO";
+import { SendVerifyEmailDTO } from "./dtos/SendVerifyEmailDTO";
+import { VerifyEmailDTO } from "./dtos/VerifyEmailDTO";
 
 @Controller("auth")
 export class AuthController {
@@ -27,6 +30,27 @@ export class AuthController {
     async login(@Body() dto: LoginDTO, @Res() res: Response, @Req() req: Request) {
         await this.auth.login(dto, res, req);
         res.status(HttpStatus.NO_CONTENT).end();
+    }
+
+    @Put("change-password")
+    @UseGuards(AuthGuard)
+    @HttpCode(HttpStatus.NO_CONTENT)
+    async changePassword(@Body() dto: ChangePasswordDTO, @UserId() userId: number) {
+        await this.auth.changePassword(dto, userId);
+    }
+
+    @Post("send-verify-email")
+    @UseGuards(AuthGuard)
+    @HttpCode(HttpStatus.NO_CONTENT)
+    async sendVerifyEmail(@Body() dto: SendVerifyEmailDTO, @UserId() userId: number) {
+        await this.auth.sendVerifyEmail(dto, userId);
+    }
+
+    @Post("verify-email")
+    @UseGuards(AuthGuard)
+    @HttpCode(HttpStatus.NO_CONTENT)
+    async verifyEmail(@Body() dto: VerifyEmailDTO) {
+        await this.auth.verifyEmail(dto);
     }
 
     @Post("refresh-token")
