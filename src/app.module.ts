@@ -7,6 +7,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AppConfig } from './config/config';
 import { PostsModule } from './modules/posts/posts.module';
 import { CommentsModule } from './modules/comments/comments.module';
+import { TestModule } from './modules/test/test.module';
 
 @Module({
   imports: [
@@ -22,7 +23,8 @@ import { CommentsModule } from './modules/comments/comments.module';
     AuthModule,
     UsersModule,
     PostsModule,
-    CommentsModule
+    CommentsModule,
+    TestModule
   ],
   controllers: [],
   providers: [],
