@@ -26,6 +26,8 @@ const makeConfig = (opts: Opts): MulterOptions => ({
             );
         }
 
+        file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
+
         cb(null, true);
     }
 })

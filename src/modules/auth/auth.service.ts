@@ -36,13 +36,13 @@ export class AuthService {
         });
 
         if (!user) {
-            throw new UnauthorizedException({code: ErrorCode.NOT_EXISTING_USER});
+            throw new UnauthorizedException({code: ErrorCode.BAD_CREDENTIALS});
         }
 
         const isPassValid = await bcrypt.compare(dto.password, user.password);
         
         if (!isPassValid) {
-            throw new UnauthorizedException({code: ErrorCode.INVALID_PASSWORD});
+            throw new UnauthorizedException({code: ErrorCode.BAD_CREDENTIALS});
         }
         
         await this.issueToken(user.id, res, req);
