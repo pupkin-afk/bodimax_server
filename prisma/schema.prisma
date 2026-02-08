@@ -35,13 +35,9 @@ model Notification {
   kind          NotifcationKind
   meta          Json
   date          DateTime   @default(now())
-  @@index([userId, id, kind])
+  @@index([userId, id, kind, date(sort: Desc)])
 }
 enum NotifcationKind {
-  // LikedPost
-  // LikedComment
-  CommentedPost
-  CommentedComment
   NewFollow
   NewFriend
   Welcome
@@ -54,7 +50,7 @@ model FollowShip {
   followedToInt  Int
   followedTo     User     @relation("UserFollowedTo", fields: [followedToInt], references: [id], onDelete: Cascade)
   createdAt      DateTime @default(now())
-  @@index([followedId, followedToInt])
+  @@index([followedId, followedToInt, createdAt(sort: Desc)])
 }
 model FriendShip {
   id             Int      @id @default(autoincrement())
@@ -63,7 +59,7 @@ model FriendShip {
   user2Id        Int
   user2          User     @relation("FSUser2", fields: [user2Id], references: [id], onDelete: Cascade)
   createdAt      DateTime @default(now())
-  @@index([user1Id, user2Id])
+  @@index([user1Id, user2Id, createdAt(sort: Desc)])
 }
 
 model RefreshToken {
@@ -89,7 +85,7 @@ model Post {
   comments     Comment[]
   attachments  PostAttachment[]
   ratings      PostRating[]
-  @@index([id, authorId])
+  @@index([authorId, createdAt(sort: Desc)])
 }
 
 model PostRating {
